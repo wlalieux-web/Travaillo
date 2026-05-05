@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM Clock-In System</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+      --accent: #6c63ff; --accent2: #00d4aa; --danger: #ff4f6a; --warning: #f5a623;
+      --text: #e8eaf6; --text-muted: #7c82a8; --card-radius: 16px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* SETUP OVERLAY */
+    #setup-overlay {
+      position:fixed; inset:0; background:rgba(15,17,23,0.97);
+      z-index:9999; display:flex; align-items:center; justify-content:center;
+      backdrop-filter:blur(10px);
+    }
+    .setup-box {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:20px; padding:40px; max-width:520px; width:90%;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    }
+    .setup-box h2 { font-size:22px; font-weight:800; margin-bottom:6px; }
+    .setup-box h2 span { color:var(--accent); }
+    .setup-box p { color:var(--text-muted); font-size:13px; margin-bottom:24px; line-height:1.6; }
+    .setup-steps { margin-bottom:24px; }
+    .setup-step {
+      display:flex; gap:12px; align-items:flex-start;
+      padding:10px 0; border-bottom:1px solid var(--border); font-size:13px;
+    }
+    .setup-step:last-child { border-bottom:none; }
+    .step-num {
+      width:24px; height:24px; border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; flex-shrink:0; color:#fff;
+    }
+    .step-text { line-height:1.5; }
+    .step-text a { color:var(--accent); text-decoration:none; }
+    .step-text a:hover { text-decoration:underline; }
+    .firebase-config-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+    .cfg-field label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+    .cfg-field input {
+      width:100%; background:var(--surface2); border:1px solid var(--border);
+      border-radius:8px; padding:9px 12px; color:var(--text);
+      font-family:'Inter',sans-serif; font-size:13px; outline:none;
+      transition:border-color 0.2s;
+    }
+    .cfg-field input:focus { border-color:var(--accent); }
+    .cfg-field input::placeholder { color:var(--text-muted); }
+    .btn-connect {
+      width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),#5b52e0);
+      border:none; border-radius:10px; color:white; font-weight:700;
+      font-size:15px; cursor:pointer; font-family:'Inter',sans-serif;
+      transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-connect:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(108,99,255,0.35); }
+    .btn-demo {
+      width:100%; padding:10px; background:transparent;
+      border:1px solid var(--border); border-radius:10px; color:var(--text-muted);
+      font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+      margin-top:10px; transition:all 0.2s;
+    }
+    .btn-demo:hover { border-color:var(--accent2); color:var(--accent2); }
+    #setup-error { color:var(--danger); font-size:12px; margin-top:8px; display:none; }
+
+    /* HEADER */
+    .header {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:14px 32px; display:flex; align-items:center;
+      justify-content:space-between; position:sticky; top:0; z-index:100;
+    }
+    .header-left { display:flex; align-items:center; gap:12px; }
+    .logo-icon {
+      width:40px; height:40px; border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+    }
+    .header h1 { font-size:18px; font-weight:700; }
+    .header h1 span { color:var(--accent); }
+    .header-clock { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:8px 20px; text-align:center; }
+    #live-time { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--accent2); }
+    #live-date { font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .header-stats { display:flex; gap:16px; }
+    .stat-pill { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:6px 16px; font-size:12px; display:flex; align-items:center; gap:6px; }
+    .dot { width:8px; height:8px; border-radius:50%; }
+    .dot-green { background:var(--accent2); box-shadow:0 0 6px var(--accent2); }
+    .dot-red { background:var(--danger); box-shadow:0 0 6px var(--danger); }
+    .firebase-badge {
+      display:flex; align-items:center; gap:6px;
+      background:rgba(255,160,0,0.1); border:1px solid rgba(255,160,0,0.3);
+      border-radius:20px; padding:5px 14px; font-size:11px; color:#ffa000;
+    }
+    #fb-status-dot { width:7px; height:7px; border-radius:50%; background:#ffa000; }
+    #fb-status-dot.connected { background:var(--accent2); box-shadow:0 0 6px var(--accent2); }
+
+    /* LAYOUT */
+    .container { max-width:1440px; margin:0 auto; padding:24px 32px; }
+    .grid-main { display:grid; grid-template-columns:1fr 380px; gap:24px; }
+    .grid-left { display:flex; flex-direction:column; gap:24px; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--card-radius); padding:24px; box-shadow:var(--shadow); }
+    .card-title { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+    .card-title i { color:var(--accent); }
+
+    /* EMPLOYEES */
+    .employees-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+    .employee-card {
+      background:var(--surface2); border:2px solid var(--border); border-radius:14px;
+      padding:16px 12px; cursor:pointer; text-align:center; transition:all 0.2s;
+      position:relative; overflow:hidden;
+    }
+    .employee-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(108,99,255,0.2); }
+    .employee-card.selected { border-color:var(--accent); background:rgba(108,99,255,0.12); }
+    .employee-card.clocked-in { border-color:var(--accent2); }
+    .employee-card.clocked-in::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent2),var(--accent)); }
+    .emp-avatar { width:64px; height:64px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:white; position:relative; }
+    .emp-avatar img { width:64px; height:64px; border-radius:50%; object-fit:cover; }
+    .emp-status-dot { position:absolute; bottom:2px; right:2px; width:14px; height:14px; border-radius:50%; border:2px solid var(--surface2); }
+    .emp-name { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .emp-role { font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+    .emp-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:10px; font-weight:600; text-transform:uppercase; }
+    .badge-in { background:rgba(0,212,170,0.15); color:var(--accent2); }
+    .badge-out { background:rgba(255,79,106,0.15); color:var(--danger); }
+    .emp-hours { font-size:10px; color:var(--text-muted); margin-top:4px; }
+
+    /* CLOCK PANEL */
+    .clock-panel { display:flex; flex-direction:column; gap:20px; }
+    .selected-employee-info { display:flex; align-items:center; gap:16px; padding:18px; background:var(--surface2); border-radius:12px; border:1px solid var(--border); }
+    .sel-avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:white; flex-shrink:0; }
+    .sel-avatar img { width:56px; height:56px; border-radius:50%; object-fit:cover; }
+    .sel-info h3 { font-size:16px; font-weight:700; }
+    .sel-info p { font-size:12px; color:var(--text-muted); margin-top:2px; }
+    .sel-info .sel-status { margin-top:6px; display:flex; align-items:center; gap:6px; font-size:12px; }
+    .clock-btn { width:100%; padding:16px; border:none; border-radius:14px; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:10px; letter-spacing:0.5px; font-family:'Inter',sans-serif; }
+    .clock-btn-in { background:linear-gradient(135deg,var(--accent2),#00b89a); color:#0f1117; box-shadow:0 6px 20px rgba(0,212,170,0.3); }
+    .clock-btn-in:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,212,170,0.4); }
+    .clock-btn-out { background:linear-gradient(135deg,var(--danger),#d93a52); color:white; box-shadow:0 6px 20px rgba(255,79,106,0.3); }
+    .clock-btn-out:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(255,79,106,0.4); }
+    .clock-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none !important; }
+    .location-info { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--surface2); border-radius:10px; border:1px solid var(--border); font-size:12px; }
+    .location-info i { color:var(--accent); font-size:16px; }
+    #location-text { color:var(--text-muted); }
+    #map { height:220px; border-radius:12px; overflow:hidden; border:1px solid var(--border); }
+
+    /* SUMMARY */
+    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .summary-stat { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center; }
+    .summary-stat .val { font-size:22px; font-weight:800; color:var(--accent); }
+    .summary-stat .lbl { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+    /* LOG */
+    .log-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .log-table th { text-align:left; padding:8px 12px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); border-bottom:1px solid var(--border); }
+    .log-table td { padding:10px 12px; border-bottom:1px solid rgba(46,50,80,0.4); vertical-align:middle; }
+    .log-table tr:last-child td { border-bottom:none; }
+    .log-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .log-emp-cell { display:flex; align-items:center; gap:10px; }
+    .log-mini-avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; flex-shrink:0; overflow:hidden; }
+    .log-mini-avatar img { width:30px; height:30px; border-radius:50%; object-fit:cover; }
+    .log-type { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+    .log-in { background:rgba(0,212,170,0.12); color:var(--accent2); }
+    .log-out { background:rgba(255,79,106,0.12); color:var(--danger); }
+    .log-empty { text-align:center; padding:30px; color:var(--text-muted); font-size:13px; }
+
+    /* TOOLBAR */
+    .toolbar { display:flex; gap:12px; margin-bottom:18px; }
+    .search-box { flex:1; display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:0 14px; }
+    .search-box i { color:var(--text-muted); }
+    .search-box input { flex:1; background:none; border:none; outline:none; color:var(--text); font-family:'Inter',sans-serif; font-size:13px; padding:10px 0; }
+    .filter-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:8px 16px; color:var(--text-muted); font-size:12px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s; }
+    .filter-btn:hover, .filter-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(108,99,255,0.08); }
+
+    /* NOTIFICATION */
+    #notification { position:fixed; top:80px; right:24px; padding:14px 20px; border-radius:12px; font-size:14px; font-weight:500; z-index:9998; display:none; align-items:center; gap:10px; max-width:340px; box-shadow:0 8px 30px rgba(0,0,0,0.5); animation:slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform:translateX(100px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    .notif-success { background:rgba(0,212,170,0.15); border:1px solid var(--accent2); color:var(--accent2); }
+    .notif-info { background:rgba(108,99,255,0.15); border:1px solid var(--accent); color:var(--accent); }
+    .notif-warning { background:rgba(245,166,35,0.15); border:1px solid var(--warning); color:var(--warning); }
+    .notif-error { background:rgba(255,79,106,0.15); border:1px solid var(--danger); color:var(--danger); }
+
+    /* LOADING */
+    .loading-spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    @media(max-width:1100px) { .grid-main { grid-template-columns:1fr; } }
+    @media(max-width:640px) { .container { padding:16px; } .header { padding:12px 16px; } .header-stats { display:none; } }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════ -->
+<!--   FIREBASE SETUP OVERLAY              -->
+<!-- ══════════════════════════════════════ -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <h2>🔥 Connect to <span>Firebase</span></h2>
+    <p>Toutes les données (pointages, employés, historique) seront sauvegardées en temps réel dans Firebase Firestore — accessible depuis n'importe quel appareil.</p>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-text">Va sur <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Crée un projet (ex: <b>crm-clockin</b>)</div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-text">Dans ton projet → <b>Project Settings</b> → <b>Add App</b> → choisis l'icône <b>&lt;/&gt; Web</b></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-text">Active <b>Firestore Database</b> dans le menu → <b>Build → Firestore</b> → démarre en <b>test mode</b></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div class="step-text">Copie ta <b>firebaseConfig</b> et colle les valeurs ci-dessous</div>
+      </div>
+    </div>
+
+    <div class="firebase-config-grid">
+      <div class="cfg-field">
+        <label>API Key</label>
+        <input id="cfg-apiKey" placeholder="AIzaSy..." />
+      </div>
+      <div class="cfg-field">
+        <label>Auth Domain</label>
+        <input id="cfg-authDomain" placeholder="mon-projet.firebaseapp.com" />
+      </div>
+      <div class="cfg-field">
+        <label>Project ID</label>
+        <input id="cfg-projectId" placeholder="mon-projet-id" />
+      </div>
+      <div class="cfg-field">
+        <label>Storage Bucket</label>
+        <input id="cfg-storageBucket" placeholder="mon-projet.appspot.com" />
+      </div>
+      <div class="cfg-field">
+        <label>Messaging Sender ID</label>
+        <input id="cfg-messagingSenderId" placeholder="123456789" />
+      </div>
+      <div class="cfg-field">
+        <label>App ID</label>
+        <input id="cfg-appId" placeholder="1:123456789:web:abc123..." />
+      </div>
+    </div>
+
+    <div id="setup-error">❌ <span id="setup-error-msg"></span></div>
+
+    <button class="btn-connect" id="btn-connect" onclick="connectFirebase()">
+      <i class="fa-solid fa-fire"></i> Connecter Firebase
+    </button>
+    <button class="btn-demo" onclick="startDemoMode()">
+      <i class="fa-solid fa-flask"></i> Continuer en mode démo (sans sauvegarde)
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--   NOTIFICATION                        -->
+<!-- ══════════════════════════════════════ -->
+<div id="notification"></div>
+
+<!-- ══════════════════════════════════════ -->
+<!--   HEADER                              -->
+<!-- ══════════════════════════════════════ -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-icon"><i class="fa-solid fa-clock" style="color:white"></i></div>
+    <h1>CRM <span>Clock-In</span> System</h1>
+  </div>
+  <div class="header-clock">
+    <div id="live-time">00:00:00</div>
+    <div id="live-date">Loading...</div>
+  </div>
+  <div class="header-stats">
+    <div class="firebase-badge">
+      <div id="fb-status-dot"></div>
+      <span id="fb-status-label">Firebase: déconnecté</span>
+    </div>
+    <div class="stat-pill"><div class="dot dot-green"></div><span id="stat-in">0 Clocked In</span></div>
+    <div class="stat-pill"><div class="dot dot-red"></div><span id="stat-out">0 Clocked Out</span></div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════ -->
+<!--   MAIN                                -->
+<!-- ══════════════════════════════════════ -->
+<div class="container">
+  <div class="grid-main">
+
+    <!-- LEFT -->
+    <div class="grid-left">
+
+      <!-- SUMMARY -->
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-chart-bar"></i> Today's Summary</div>
+        <div class="summary-grid">
+          <div class="summary-stat"><div class="val" id="sum-present">0</div><div class="lbl">Present</div></div>
+          <div class="summary-stat"><div class="val" id="sum-absent" style="color:var(--danger)">0</div><div class="lbl">Absent</div></div>
+          <div class="summary-stat"><div class="val" id="sum-hours" style="color:var(--accent2)">0h</div><div class="lbl">Total Hours</div></div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES -->
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-users"></i> Team Members</div>
+        <div class="toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-emp" placeholder="Search employee..."/>
+          </div>
+          <button class="filter-btn active" onclick="filterEmployees('all',this)">All</button>
+          <button class="filter-btn" onclick="filterEmployees('in',this)">In</button>
+          <button class="filter-btn" onclick="filterEmployees('out',this)">Out</button>
+        </div>
+        <div class="employees-grid" id="employees-grid">
+          <div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:30px;font-size:13px">
+            <div class="loading-spinner" style="margin:0 auto 10px"></div>
+            Chargement des employés...
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-list-check"></i> Activity Log
+          <span style="margin-left:auto;font-size:11px;color:var(--accent2);font-weight:400" id="realtime-badge"></span>
+        </div>
+        <div id="log-container">
+          <div class="log-empty"><i class="fa-regular fa-clock fa-lg" style="margin-bottom:8px;display:block"></i>Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- CLOCK IN/OUT -->
+      <div class="card clock-panel">
+        <div class="card-title"><i class="fa-solid fa-fingerprint"></i> Clock In / Out</div>
+        <div class="selected-employee-info" id="sel-emp-info">
+          <div class="sel-avatar" style="background:linear-gradient(135deg,#444,#666)">
+            <i class="fa-solid fa-user" style="font-size:24px;color:#aaa"></i>
+          </div>
+          <div class="sel-info">
+            <h3>Sélectionner un employé</h3>
+            <p>Clique sur un membre de l'équipe</p>
+          </div>
+        </div>
+        <button class="clock-btn clock-btn-in" id="clock-btn" disabled onclick="handleClock()">
+          <i class="fa-solid fa-right-to-bracket"></i> Clock In
+        </button>
+        <div class="location-info">
+          <i class="fa-solid fa-location-dot"></i>
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:2px">Localisation GPS</div>
+            <div id="location-text">Détection en cours...</div>
+          </div>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- SHIFT TRACKER -->
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-hourglass-half"></i> Shift Tracker</div>
+        <div id="shift-tracker">
+          <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:16px 0">
+            <i class="fa-regular fa-hourglass" style="display:block;margin-bottom:8px;font-size:20px"></i>
+            Aucun employé en service
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!--   SCRIPTS                             -->
+<!-- ══════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════
+// DEFAULT EMPLOYEES (utilisés si Firestore vide)
+// ═══════════════════════════════════════════════
+const DEFAULT_EMPLOYEES = [
+  { id:'emp_1', name:'Sophie Martin',  role:'Sales Manager',    color:'#6c63ff', initials:'SM', img:'https://i.pravatar.cc/150?img=47' },
+  { id:'emp_2', name:'James Wilson',   role:'Account Exec',     color:'#f5a623', initials:'JW', img:'https://i.pravatar.cc/150?img=11' },
+  { id:'emp_3', name:'Aisha Johnson',  role:'Customer Success', color:'#00d4aa', initials:'AJ', img:'https://i.pravatar.cc/150?img=32' },
+  { id:'emp_4', name:'Carlos Rivera',  role:'BDR',              color:'#ff4f6a', initials:'CR', img:'https://i.pravatar.cc/150?img=53' },
+  { id:'emp_5', name:'Emma Dupont',    role:'Marketing',        color:'#a78bfa', initials:'ED', img:'https://i.pravatar.cc/150?img=25' },
+  { id:'emp_6', name:'Liam Chen',      role:'Developer',        color:'#34d399', initials:'LC', img:'https://i.pravatar.cc/150?img=60' },
+  { id:'emp_7', name:'Nadia Okafor',   role:'HR Manager',       color:'#fb923c', initials:'NO', img:'https://i.pravatar.cc/150?img=44' },
+  { id:'emp_8', name:'Tom Leclerc',    role:'Finance',          color:'#38bdf8', initials:'TL', img:'https://i.pravatar.cc/150?img=15' },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  employees: [],
+  log: [],
+  selectedId: null,
+  filter: 'all',
+  userLat: 45.5017,
+  userLng: -73.5673,
+  firebaseMode: false,
+  db: null,
+  unsubEmployees: null,
+  unsubLog: null,
+};
+let map, userMarker, clockMarkers = {};
+
+// ═══════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent = now.toLocaleTimeString('en-US',{hour12:false});
+  document.getElementById('live-date').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  updateShiftTimers();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════
+// FIREBASE CONNECT
+// ═══════════════════════════════════════════════
+async function connectFirebase() {
+  const btn = document.getElementById('btn-connect');
+  const errEl = document.getElementById('setup-error');
+  errEl.style.display = 'none';
+
+  const config = {
+    apiKey:            document.getElementById('cfg-apiKey').value.trim(),
+    authDomain:        document.getElementById('cfg-authDomain').value.trim(),
+    projectId:         document.getElementById('cfg-projectId').value.trim(),
+    storageBucket:     document.getElementById('cfg-storageBucket').value.trim(),
+    messagingSenderId: document.getElementById('cfg-messagingSenderId').value.trim(),
+    appId:             document.getElementById('cfg-appId').value.trim(),
+  };
+
+  if (!config.apiKey || !config.projectId) {
+    document.getElementById('setup-error-msg').textContent = 'API Key et Project ID sont obligatoires.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.innerHTML = '<div class="loading-spinner"></div> Connexion...';
+  btn.disabled = true;
+
+  try {
+    // Init Firebase
+    if (firebase.apps.length) firebase.apps[0].delete();
+    const app = firebase.initializeApp(config);
+    state.db = firebase.firestore(app);
+
+    // Test la connexion
+    await state.db.collection('_ping').doc('test').set({ ts: new Date() });
+    await state.db.collection('_ping').doc('test').delete();
+
+    // Sauvegarde la config dans localStorage pour les prochaines visites
+    localStorage.setItem('fbConfig', JSON.stringify(config));
+
+    state.firebaseMode = true;
+    document.getElementById('setup-overlay').style.display = 'none';
+    setFirebaseStatus(true);
+    showNotification('🔥 Firebase connecté ! Données synchronisées en temps réel.', 'success');
+    await initApp();
+
+  } catch(e) {
+    btn.innerHTML = '<i class="fa-solid fa-fire"></i> Connecter Firebase';
+    btn.disabled = false;
+    document.getElementById('setup-error-msg').textContent = 'Erreur: ' + (e.message || e);
+    errEl.style.display = 'block';
+  }
+}
+
+// Auto-reconnect si config sauvegardée
+window.addEventListener('load', async () => {
+  const saved = localStorage.getItem('fbConfig');
+  if (saved) {
+    try {
+      const config = JSON.parse(saved);
+      document.getElementById('cfg-apiKey').value = config.apiKey || '';
+      document.getElementById('cfg-authDomain').value = config.authDomain || '';
+      document.getElementById('cfg-projectId').value = config.projectId || '';
+      document.getElementById('cfg-storageBucket').value = config.storageBucket || '';
+      document.getElementById('cfg-messagingSenderId').value = config.messagingSenderId || '';
+      document.getElementById('cfg-appId').value = config.appId || '';
+
+      if (firebase.apps.length) firebase.apps[0].delete();
+      const app = firebase.initializeApp(config);
+      state.db = firebase.firestore(app);
+      state.firebaseMode = true;
+      document.getElementById('setup-overlay').style.display = 'none';
+      setFirebaseStatus(true);
+      showNotification('🔥 Firebase reconnecté automatiquement.', 'success');
+      await initApp();
+    } catch(e) {
+      console.warn('Auto-reconnect failed:', e);
+    }
+  }
+});
+
+function startDemoMode() {
+  document.getElementById('setup-overlay').style.display = 'none';
+  setFirebaseStatus(false);
+  showNotification('⚠️ Mode démo — les données ne sont pas sauvegardées.', 'warning');
+  initApp();
+}
+
+function setFirebaseStatus(connected) {
+  const dot = document.getElementById('fb-status-dot');
+  const label = document.getElementById('fb-status-label');
+  if (connected) {
+    dot.classList.add('connected');
+    label.textContent = 'Firebase: connecté ✓';
+    label.style.color = 'var(--accent2)';
+  } else {
+    dot.classList.remove('connected');
+    label.textContent = 'Mode démo';
+    label.style.color = 'var(--warning)';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT APP
+// ═══════════════════════════════════════════════
+async function initApp() {
+  getLocation();
+
+  if (state.firebaseMode && state.db) {
+    await seedEmployees();
+    subscribeEmployees();
+    subscribeLog();
+  } else {
+    // Mode démo : charger depuis mémoire
+    state.employees = DEFAULT_EMPLOYEES.map(e => ({ ...e, clockedIn:false, clockInTime:null, totalSeconds:0 }));
+    renderEmployees();
+    renderLog();
+    updateShiftTracker();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FIRESTORE — SEED EMPLOYEES (une seule fois)
+// ═══════════════════════════════════════════════
+async function seedEmployees() {
+  const snap = await state.db.collection('employees').get();
+  if (snap.empty) {
+    const batch = state.db.batch();
+    DEFAULT_EMPLOYEES.forEach(emp => {
+      const ref = state.db.collection('employees').doc(emp.id);
+      batch.set(ref, { ...emp, clockedIn:false, clockInTime:null, totalSeconds:0 });
+    });
+    await batch.commit();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FIRESTORE — REALTIME LISTENERS
+// ═══════════════════════════════════════════════
+function subscribeEmployees() {
+  if (state.unsubEmployees) state.unsubEmployees();
+  state.unsubEmployees = state.db.collection('employees')
+    .orderBy('name')
+    .onSnapshot(snap => {
+      state.employees = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      renderEmployees();
+      updateShiftTracker();
+      if (state.selectedId) selectEmployee(state.selectedId);
+    }, err => {
+      showNotification('❌ Erreur Firestore: ' + err.message, 'error');
+    });
+}
+
+function subscribeLog() {
+  if (state.unsubLog) state.unsubLog();
+  const today = new Date(); today.setHours(0,0,0,0);
+  state.unsubLog = state.db.collection('clock_events')
+    .where('timestamp', '>=', today)
+    .orderBy('timestamp', 'desc')
+    .limit(50)
+    .onSnapshot(snap => {
+      state.log = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      renderLog();
+      document.getElementById('realtime-badge').textContent = '● live';
+    });
+}
+
+// ═══════════════════════════════════════════════
+// CLOCK IN / OUT
+// ═══════════════════════════════════════════════
+async function handleClock() {
+  const emp = state.employees.find(e => e.id === state.selectedId);
+  if (!emp) return;
+
+  const btn = document.getElementById('clock-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading-spinner"></div> Traitement...';
+
+  const now = new Date();
+
+  try {
+    if (!emp.clockedIn) {
+      // ── CLOCK IN ──
+      const eventData = {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        employeeRole: emp.role,
+        employeeColor: emp.color,
+        employeeImg: emp.img,
+        type: 'in',
+        timestamp: now,
+        lat: state.userLat,
+        lng: state.userLng,
+        duration: null,
+      };
+
+      if (state.firebaseMode && state.db) {
+        await state.db.collection('employees').doc(emp.id).update({
+          clockedIn: true,
+          clockInTime: now,
+        });
+        await state.db.collection('clock_events').add(eventData);
+      } else {
+        emp.clockedIn = true; emp.clockInTime = now.getTime();
+        state.log.unshift({ ...eventData, timestamp: now });
+        renderLog(); renderEmployees(); updateShiftTracker();
+      }
+
+      addClockMarker(emp, state.userLat, state.userLng);
+      showNotification(`✅ ${emp.name} pointé à ${now.toLocaleTimeString()}`, 'success');
+
+    } else {
+      // ── CLOCK OUT ──
+      const inTime = emp.clockInTime instanceof Date ? emp.clockInTime : (emp.clockInTime?.toDate ? emp.clockInTime.toDate() : new Date(emp.clockInTime));
+      const durationSec = Math.floor((now - inTime) / 1000);
+
+      const eventData = {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        employeeRole: emp.role,
+        employeeColor: emp.color,
+        employeeImg: emp.img,
+        type: 'out',
+        timestamp: now,
+        lat: state.userLat,
+        lng: state.userLng,
+        duration: durationSec,
+        shiftStart: inTime,
+      };
+
+      if (state.firebaseMode && state.db) {
+        await state.db.collection('employees').doc(emp.id).update({
+          clockedIn: false,
+          clockInTime: null,
+          totalSeconds: firebase.firestore.FieldValue.increment(durationSec),
+        });
+        await state.db.collection('clock_events').add(eventData);
+      } else {
+        emp.clockedIn = false;
+        emp.totalSeconds = (emp.totalSeconds || 0) + durationSec;
+        emp.clockInTime = null;
+        state.log.unshift({ ...eventData, timestamp: now });
+        renderLog(); renderEmployees(); updateShiftTracker();
+      }
+
+      removeClockMarker(emp.id);
+      showNotification(`👋 ${emp.name} a quitté — shift: ${secondsToHM(durationSec)}`, 'info');
+    }
+
+    // re-sélectionner pour refresh UI
+    setTimeout(() => selectEmployee(emp.id), 300);
+
+  } catch(e) {
+    showNotification('❌ Erreur: ' + e.message, 'error');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════
+function initMap(lat, lng) {
+  if (map) return;
+  map = L.map('map', { zoomControl:true, attributionControl:false }).setView([lat, lng], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
+  const officeIcon = L.divIcon({
+    html:'<div style="background:linear-gradient(135deg,#6c63ff,#00d4aa);width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 0 12px rgba(108,99,255,0.8)"></div>',
+    iconSize:[16,16], iconAnchor:[8,8], className:''
+  });
+  userMarker = L.marker([lat,lng],{icon:officeIcon}).addTo(map).bindPopup('<b>📍 Bureau</b>');
+}
+
+function addClockMarker(emp, lat, lng) {
+  if (!map) return;
+  const icon = L.divIcon({
+    html:`<div style="background:${emp.color};width:32px;height:32px;border-radius:50%;border:2px solid white;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.5)"><img src="${emp.img}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"></div>`,
+    iconSize:[32,32], iconAnchor:[16,16], className:''
+  });
+  if (clockMarkers[emp.id]) map.removeLayer(clockMarkers[emp.id]);
+  const jlat = lat + (Math.random()-0.5)*0.004;
+  const jlng = lng + (Math.random()-0.5)*0.004;
+  clockMarkers[emp.id] = L.marker([jlat,jlng],{icon}).addTo(map)
+    .bindPopup(`<b>${emp.name}</b><br>Pointé à ${new Date().toLocaleTimeString()}`);
+}
+
+function removeClockMarker(empId) {
+  if (clockMarkers[empId]) { map.removeLayer(clockMarkers[empId]); delete clockMarkers[empId]; }
+}
+
+function getLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('location-text').textContent = 'Géolocalisation non supportée';
+    initMap(state.userLat, state.userLng);
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.userLat = pos.coords.latitude;
+      state.userLng = pos.coords.longitude;
+      document.getElementById('location-text').textContent = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+      initMap(state.userLat, state.userLng);
+    },
+    () => {
+      document.getElementById('location-text').textContent = 'Localisation par défaut (Montréal)';
+      initMap(state.userLat, state.userLng);
+    }
+  );
+}
+
+// ═══════════════════════════════════════════════
+// RENDER EMPLOYEES
+// ═══════════════════════════════════════════════
+function renderEmployees() {
+  const query = document.getElementById('search-emp').value.toLowerCase();
+  const grid = document.getElementById('employees-grid');
+  grid.innerHTML = '';
+
+  const filtered = state.employees.filter(e => {
+    const matchName = e.name.toLowerCase().includes(query) || e.role.toLowerCase().includes(query);
+    const matchFilter = state.filter==='all' || (state.filter==='in' && e.clockedIn) || (state.filter==='out' && !e.clockedIn);
+    return matchName && matchFilter;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px;font-size:13px">Aucun employé trouvé</div>';
+    return;
+  }
+
+  filtered.forEach(emp => {
+    const clockInT = emp.clockInTime instanceof Date ? emp.clockInTime : (emp.clockInTime?.toDate ? emp.clockInTime.toDate() : (emp.clockInTime ? new Date(emp.clockInTime) : null));
+    const elapsed = emp.clockedIn && clockInT ? Math.floor((Date.now() - clockInT.getTime())/1000) : 0;
+    const hours = secondsToHM((emp.totalSeconds||0) + elapsed);
+    const card = document.createElement('div');
+    card.className = 'employee-card' + (emp.clockedIn ? ' clocked-in':'') + (state.selectedId===emp.id ? ' selected':'');
+    card.onclick = () => selectEmployee(emp.id);
+    card.innerHTML = `
+      <div class="emp-avatar" style="background:${emp.color}">
+        <img src="${emp.img}" onerror="this.style.display='none'" alt="${emp.initials}">
+        <div class="emp-status-dot" style="background:${emp.clockedIn ? 'var(--accent2)':'#555'}"></div>
+      </div>
+      <div class="emp-name">${emp.name}</div>
+      <div class="emp-role">${emp.role}</div>
+      <span class="emp-badge ${emp.clockedIn ? 'badge-in':'badge-out'}">${emp.clockedIn ? '● In':'○ Out'}</span>
+      ${emp.clockedIn ? `<div class="emp-hours">${hours} today</div>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+
+  const inCount = state.employees.filter(e => e.clockedIn).length;
+  document.getElementById('stat-in').textContent = `${inCount} Clocked In`;
+  document.getElementById('stat-out').textContent = `${state.employees.length - inCount} Clocked Out`;
+  document.getElementById('sum-present').textContent = inCount;
+  document.getElementById('sum-absent').textContent = state.employees.length - inCount;
+  const totalSecs = state.employees.reduce((acc,e) => {
+    const clockInT = e.clockedIn && e.clockInTime ? (e.clockInTime instanceof Date ? e.clockInTime : (e.clockInTime?.toDate ? e.clockInTime.toDate() : new Date(e.clockInTime))) : null;
+    return acc + (e.totalSeconds||0) + (clockInT ? Math.floor((Date.now()-clockInT.getTime())/1000) : 0);
+  }, 0);
+  document.getElementById('sum-hours').textContent = secondsToHM(totalSecs);
+}
+
+function filterEmployees(f, btn) {
+  state.filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEmployees();
+}
+document.getElementById('search-emp').addEventListener('input', renderEmployees);
+
+// ═══════════════════════════════════════════════
+// SELECT EMPLOYEE
+// ═══════════════════════════════════════════════
+function selectEmployee(id) {
+  state.selectedId = id;
+  const emp = state.employees.find(e => e.id===id);
+  if (!emp) return;
+  const btn = document.getElementById('clock-btn');
+  const info = document.getElementById('sel-emp-info');
+  const clockInT = emp.clockInTime instanceof Date ? emp.clockInTime : (emp.clockInTime?.toDate ? emp.clockInTime.toDate() : null);
+
+  info.innerHTML = `
+    <div class="sel-avatar" style="background:${emp.color}">
+      <img src="${emp.img}" onerror="this.style.display='none'" alt="${emp.initials}">
+    </div>
+    <div class="sel-info">
+      <h3>${emp.name}</h3>
+      <p>${emp.role}</p>
+      <div class="sel-status">
+        <div style="width:8px;height:8px;border-radius:50%;background:${emp.clockedIn ? 'var(--accent2)':'var(--danger)'}"></div>
+        <span style="color:${emp.clockedIn ? 'var(--accent2)':'var(--danger)'}">
+          ${emp.clockedIn && clockInT ? 'En service depuis ' + clockInT.toLocaleTimeString() : 'Pas en service'}
+        </span>
+      </div>
+    </div>
+  `;
+  btn.disabled = false;
+  if (emp.clockedIn) {
+    btn.className = 'clock-btn clock-btn-out';
+    btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Clock Out';
+  } else {
+    btn.className = 'clock-btn clock-btn-in';
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Clock In';
+  }
+  renderEmployees();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER LOG
+// ═══════════════════════════════════════════════
+function renderLog() {
+  const container = document.getElementById('log-container');
+  if (!state.log.length) {
+    container.innerHTML = '<div class="log-empty"><i class="fa-regular fa-clock fa-lg" style="margin-bottom:8px;display:block"></i>Aucune activité aujourd\'hui</div>';
+    return;
+  }
+  let html = `<table class="log-table"><thead><tr>
+    <th>Employé</th><th>Action</th><th>Heure</th><th>Durée</th><th>Localisation</th>
+  </tr></thead><tbody>`;
+  state.log.slice(0,25).forEach(e => {
+    const ts = e.timestamp instanceof Date ? e.timestamp : (e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp));
+    const locStr = (e.lat && e.lng) ? `${parseFloat(e.lat).toFixed(3)}, ${parseFloat(e.lng).toFixed(3)}` : '—';
+    html += `<tr>
+      <td>
+        <div class="log-emp-cell">
+          <div class="log-mini-avatar" style="background:${e.employeeColor||'#666'}">
+            <img src="${e.employeeImg||''}" onerror="this.style.display='none'" alt="">
+          </div>
+          <div>
+            <div style="font-weight:600">${e.employeeName}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${e.employeeRole||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="log-type ${e.type==='in'?'log-in':'log-out'}">
+        <i class="fa-solid ${e.type==='in'?'fa-right-to-bracket':'fa-right-from-bracket'}"></i>
+        ${e.type==='in'?'Clock In':'Clock Out'}
+      </span></td>
+      <td style="font-variant-numeric:tabular-nums;color:var(--text-muted)">${ts.toLocaleTimeString()}</td>
+      <td style="color:var(--text-muted)">${e.duration ? secondsToHM(e.duration) : '—'}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${locStr}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// SHIFT TRACKER
+// ═══════════════════════════════════════════════
+function updateShiftTracker() {
+  const active = state.employees.filter(e => e.clockedIn);
+  const el = document.getElementById('shift-tracker');
+  if (!active.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:16px 0"><i class="fa-regular fa-hourglass" style="display:block;margin-bottom:8px;font-size:20px"></i>Aucun employé en service</div>';
+    return;
+  }
+  el.innerHTML = active.map(e => {
+    const clockInT = e.clockInTime instanceof Date ? e.clockInTime : (e.clockInTime?.toDate ? e.clockInTime.toDate() : new Date(e.clockInTime));
+    const elapsed = Math.floor((Date.now() - clockInT.getTime())/1000);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:${e.color};flex-shrink:0">
+        <img src="${e.img}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Depuis ${clockInT.toLocaleTimeString()}</div>
+      </div>
+      <div class="shift-timer" data-id="${e.id}" style="font-size:15px;font-weight:700;color:var(--accent2);font-variant-numeric:tabular-nums">${secondsToHMS(elapsed)}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateShiftTimers() {
+  document.querySelectorAll('.shift-timer').forEach(el => {
+    const empId = el.dataset.id;
+    const emp = state.employees.find(e => e.id===empId);
+    if (emp && emp.clockedIn && emp.clockInTime) {
+      const clockInT = emp.clockInTime instanceof Date ? emp.clockInTime : (emp.clockInTime?.toDate ? emp.clockInTime.toDate() : new Date(emp.clockInTime));
+      el.textContent = secondsToHMS(Math.floor((Date.now()-clockInT.getTime())/1000));
+    }
+  });
+  renderEmployees();
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function secondsToHM(s) { const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return h>0?`${h}h ${m}m`:`${m}m`; }
+function secondsToHMS(s) { return [Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(v=>String(v).padStart(2,'0')).join(':'); }
+
+function showNotification(msg, type='success') {
+  const el = document.getElementById('notification');
+  el.className = 'notif-' + type;
+  el.innerHTML = msg;
+  el.style.display = 'flex';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display='none', 4500);
+}
+</script>
+</body>
+</html>

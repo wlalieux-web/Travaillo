@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Travaillo — Email Templates Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:#f1f5f9; padding:40px 20px; }
+    h1 { text-align:center; color:#0f172a; font-size:24px; margin-bottom:8px; }
+    p.sub { text-align:center; color:#64748b; font-size:14px; margin-bottom:40px; }
+    .tabs { display:flex; justify-content:center; gap:8px; margin-bottom:32px; flex-wrap:wrap; }
+    .tab { padding:8px 20px; border-radius:20px; border:2px solid #e2e8f0; background:white; cursor:pointer; font-size:13px; font-weight:600; color:#64748b; transition:all 0.2s; font-family:'Inter',sans-serif; }
+    .tab.active { border-color:#10b981; background:#10b981; color:white; }
+    .email-wrapper { display:none; max-width:600px; margin:0 auto; }
+    .email-wrapper.active { display:block; }
+    .code-box { background:#1e293b; border-radius:12px; padding:20px; margin-top:24px; }
+    .code-box h3 { color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+    .code-box pre { color:#e2e8f0; font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-all; font-family:monospace; }
+    .copy-btn { display:inline-block; margin-top:12px; padding:8px 16px; background:#10b981; border:none; border-radius:8px; color:white; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+    .copy-btn:hover { background:#0ea472; }
+
+    /* ── EMAIL STYLES ── */
+    .email-card { background:white; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body>
+
+<h1>✉️ Travaillo — Email Templates</h1>
+<p class="sub">Aperçu de tous les emails — copie le code HTML dans Supabase</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('confirm')">✅ Confirmation</button>
+  <button class="tab" onclick="show('invite')">👥 Invitation</button>
+  <button class="tab" onclick="show('reset')">🔑 Reset Password</button>
+  <button class="tab" onclick="show('magic')">🔮 Magic Link</button>
+</div>
+
+<!-- ══════════════════════════════ -->
+<!-- CONFIRM SIGN UP                -->
+<!-- ══════════════════════════════ -->
+<div class="email-wrapper active" id="tab-confirm">
+  <div class="email-card">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">
+      <!-- HEADER -->
+      <tr>
+        <td style="background:linear-gradient(135deg,#065f46,#10b981);padding:40px 48px;text-align:center;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="text-align:center;">
+                <div style="display:inline-flex;align-items:center;gap:10px;">
+                  <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:12px;display:inline-block;line-height:44px;text-align:center;font-size:22px;">⚡</div>
+                  <span style="color:white;font-size:26px;font-weight:800;letter-spacing:-0.5px;vertical-align:middle;margin-left:10px;">Travaillo</span>
+                </div>
+                <div style="margin-top:24px;width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:50%;margin:24px auto 0;line-height:56px;font-size:28px;">✉️</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <!-- BODY -->
+      <tr>
+        <td style="padding:48px 48px 32px;">
+          <h1 style="color:#0f172a;font-size:26px;font-weight:800;margin:0 0 12px;letter-spacing:-0.5px;">Confirme ton adresse email</h1>
+          <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;">Bienvenue sur <strong style="color:#10b981;">Travaillo</strong> ! Tu es à un clic de rejoindre ton équipe. Clique sur le bouton ci-dessous pour confirmer ton adresse email et activer ton compte.</p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="text-align:center;padding:8px 0 32px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;letter-spacing:0.3px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+                  Confirmer mon email →
+                </a>
+              </td>
+            </tr>
+          </table>
+          <!-- INFO BOX -->
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#f0fdf4;border-left:4px solid #10b981;border-radius:0 8px 8px 0;padding:16px 20px;">
+                <p style="color:#065f46;font-size:13px;margin:0;line-height:1.6;">
+                  🔒 <strong>Lien sécurisé</strong> — Ce lien expire dans <strong>24 heures</strong> et ne peut être utilisé qu'une seule fois.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="color:#94a3b8;font-size:12px;margin:24px 0 0;line-height:1.6;">Si tu n'as pas créé de compte Travaillo, tu peux ignorer cet email en toute sécurité.</p>
+        </td>
+      </tr>
+      <!-- FOOTER -->
+      <tr>
+        <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="text-align:center;">
+                <p style="color:#94a3b8;font-size:12px;margin:0 0 8px;">© 2026 Travaillo — Tous droits réservés</p>
+                <p style="color:#cbd5e1;font-size:11px;margin:0;">Besoin d'aide ? <a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;">support@travaillo.com</a></p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="code-box">
+    <h3>📋 Code à coller dans Supabase → Templates → Confirm sign up</h3>
+    <pre id="code-confirm">&lt;table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;"&gt;
+  &lt;tr&gt;
+    &lt;td style="background:linear-gradient(135deg,#065f46,#10b981);padding:40px 48px;text-align:center;"&gt;
+      &lt;span style="color:white;font-size:26px;font-weight:800;"&gt;⚡ Travaillo&lt;/span&gt;
+      &lt;div style="margin-top:16px;font-size:36px;"&gt;✉️&lt;/div&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="padding:48px;background:white;"&gt;
+      &lt;h1 style="color:#0f172a;font-size:24px;font-weight:800;margin:0 0 12px;"&gt;Confirme ton adresse email&lt;/h1&gt;
+      &lt;p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;"&gt;
+        Bienvenue sur &lt;strong style="color:#10b981;"&gt;Travaillo&lt;/strong&gt; ! Clique ci-dessous pour confirmer ton email et activer ton compte.
+      &lt;/p&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;&lt;td style="text-align:center;padding:8px 0 32px;"&gt;
+        &lt;a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(16,185,129,0.35);"&gt;
+          Confirmer mon email →
+        &lt;/a&gt;
+      &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;
+        &lt;td style="background:#f0fdf4;border-left:4px solid #10b981;border-radius:0 8px 8px 0;padding:16px 20px;"&gt;
+          &lt;p style="color:#065f46;font-size:13px;margin:0;"&gt;🔒 Lien sécurisé — expire dans &lt;strong&gt;24 heures&lt;/strong&gt;.&lt;/p&gt;
+        &lt;/td&gt;
+      &lt;/tr&gt;&lt;/table&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:24px 0 0;"&gt;Si tu n'as pas créé de compte, ignore cet email.&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;"&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:0;"&gt;© 2026 Travaillo — &lt;a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;"&gt;support@travaillo.com&lt;/a&gt;&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</pre>
+    <button class="copy-btn" onclick="copyCode('code-confirm')">📋 Copier le code</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ -->
+<!-- INVITE USER                    -->
+<!-- ══════════════════════════════ -->
+<div class="email-wrapper" id="tab-invite">
+  <div class="email-card">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">
+      <tr>
+        <td style="background:linear-gradient(135deg,#1e1b4b,#4f46e5);padding:40px 48px;text-align:center;">
+          <span style="color:white;font-size:26px;font-weight:800;">⚡ Travaillo</span>
+          <div style="margin-top:16px;font-size:36px;">👥</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:48px;background:white;">
+          <h1 style="color:#0f172a;font-size:26px;font-weight:800;margin:0 0 12px;">Tu es invité à rejoindre l'équipe !</h1>
+          <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;">Quelqu'un t'a invité à rejoindre <strong style="color:#4f46e5;">Travaillo</strong>. Clique sur le bouton ci-dessous pour créer ton compte et commencer à travailler avec ton équipe.</p>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="text-align:center;padding:8px 0 32px;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#3730a3);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(79,70,229,0.35);">
+              Rejoindre l'équipe →
+            </a>
+          </td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="background:#eef2ff;border-left:4px solid #4f46e5;border-radius:0 8px 8px 0;padding:16px 20px;">
+              <p style="color:#3730a3;font-size:13px;margin:0;">⏰ Cette invitation expire dans <strong>72 heures</strong>.</p>
+            </td>
+          </tr></table>
+          <p style="color:#94a3b8;font-size:12px;margin:24px 0 0;">Si tu ne t'attendais pas à cette invitation, tu peux ignorer cet email.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;">
+          <p style="color:#94a3b8;font-size:12px;margin:0;">© 2026 Travaillo — <a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;">support@travaillo.com</a></p>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="code-box">
+    <h3>📋 Code à coller dans Supabase → Templates → Invite user</h3>
+    <pre id="code-invite">&lt;table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;"&gt;
+  &lt;tr&gt;
+    &lt;td style="background:linear-gradient(135deg,#1e1b4b,#4f46e5);padding:40px 48px;text-align:center;"&gt;
+      &lt;span style="color:white;font-size:26px;font-weight:800;"&gt;⚡ Travaillo&lt;/span&gt;
+      &lt;div style="margin-top:16px;font-size:36px;"&gt;👥&lt;/div&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="padding:48px;background:white;"&gt;
+      &lt;h1 style="color:#0f172a;font-size:24px;font-weight:800;margin:0 0 12px;"&gt;Tu es invité à rejoindre l'équipe !&lt;/h1&gt;
+      &lt;p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;"&gt;
+        Quelqu'un t'a invité à rejoindre &lt;strong style="color:#4f46e5;"&gt;Travaillo&lt;/strong&gt;. Clique ci-dessous pour créer ton compte.
+      &lt;/p&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;&lt;td style="text-align:center;padding:8px 0 32px;"&gt;
+        &lt;a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#3730a3);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(79,70,229,0.35);"&gt;
+          Rejoindre l'équipe →
+        &lt;/a&gt;
+      &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;
+        &lt;td style="background:#eef2ff;border-left:4px solid #4f46e5;border-radius:0 8px 8px 0;padding:16px 20px;"&gt;
+          &lt;p style="color:#3730a3;font-size:13px;margin:0;"&gt;⏰ Cette invitation expire dans &lt;strong&gt;72 heures&lt;/strong&gt;.&lt;/p&gt;
+        &lt;/td&gt;
+      &lt;/tr&gt;&lt;/table&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:24px 0 0;"&gt;Tu ne t'attendais pas à cette invitation ? Ignore cet email.&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;"&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:0;"&gt;© 2026 Travaillo — &lt;a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;"&gt;support@travaillo.com&lt;/a&gt;&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</pre>
+    <button class="copy-btn" onclick="copyCode('code-invite')">📋 Copier le code</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ -->
+<!-- RESET PASSWORD                 -->
+<!-- ══════════════════════════════ -->
+<div class="email-wrapper" id="tab-reset">
+  <div class="email-card">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">
+      <tr>
+        <td style="background:linear-gradient(135deg,#7c2d12,#f97316);padding:40px 48px;text-align:center;">
+          <span style="color:white;font-size:26px;font-weight:800;">⚡ Travaillo</span>
+          <div style="margin-top:16px;font-size:36px;">🔑</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:48px;background:white;">
+          <h1 style="color:#0f172a;font-size:26px;font-weight:800;margin:0 0 12px;">Réinitialise ton mot de passe</h1>
+          <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;">On a reçu une demande de réinitialisation de mot de passe pour ton compte <strong style="color:#f97316;">Travaillo</strong>. Clique ci-dessous pour choisir un nouveau mot de passe.</p>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="text-align:center;padding:8px 0 32px;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#ea580c);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(249,115,22,0.35);">
+              Réinitialiser mon mot de passe →
+            </a>
+          </td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 8px 8px 0;padding:16px 20px;">
+              <p style="color:#9a3412;font-size:13px;margin:0;">⚠️ Ce lien expire dans <strong>1 heure</strong>. Si tu n'as pas fait cette demande, ignore cet email — ton mot de passe reste inchangé.</p>
+            </td>
+          </tr></table>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;">
+          <p style="color:#94a3b8;font-size:12px;margin:0;">© 2026 Travaillo — <a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;">support@travaillo.com</a></p>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="code-box">
+    <h3>📋 Code à coller dans Supabase → Templates → Reset password</h3>
+    <pre id="code-reset">&lt;table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;"&gt;
+  &lt;tr&gt;
+    &lt;td style="background:linear-gradient(135deg,#7c2d12,#f97316);padding:40px 48px;text-align:center;"&gt;
+      &lt;span style="color:white;font-size:26px;font-weight:800;"&gt;⚡ Travaillo&lt;/span&gt;
+      &lt;div style="margin-top:16px;font-size:36px;"&gt;🔑&lt;/div&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="padding:48px;background:white;"&gt;
+      &lt;h1 style="color:#0f172a;font-size:24px;font-weight:800;margin:0 0 12px;"&gt;Réinitialise ton mot de passe&lt;/h1&gt;
+      &lt;p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;"&gt;
+        On a reçu une demande de réinitialisation pour ton compte &lt;strong style="color:#f97316;"&gt;Travaillo&lt;/strong&gt;.
+      &lt;/p&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;&lt;td style="text-align:center;padding:8px 0 32px;"&gt;
+        &lt;a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#ea580c);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(249,115,22,0.35);"&gt;
+          Réinitialiser mon mot de passe →
+        &lt;/a&gt;
+      &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;
+        &lt;td style="background:#fff7ed;border-left:4px solid #f97316;border-radius:0 8px 8px 0;padding:16px 20px;"&gt;
+          &lt;p style="color:#9a3412;font-size:13px;margin:0;"&gt;⚠️ Expire dans &lt;strong&gt;1 heure&lt;/strong&gt;. Tu n'as pas fait cette demande ? Ignore cet email.&lt;/p&gt;
+        &lt;/td&gt;
+      &lt;/tr&gt;&lt;/table&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;"&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:0;"&gt;© 2026 Travaillo — &lt;a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;"&gt;support@travaillo.com&lt;/a&gt;&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</pre>
+    <button class="copy-btn" onclick="copyCode('code-reset')">📋 Copier le code</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ -->
+<!-- MAGIC LINK                     -->
+<!-- ══════════════════════════════ -->
+<div class="email-wrapper" id="tab-magic">
+  <div class="email-card">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;">
+      <tr>
+        <td style="background:linear-gradient(135deg,#4a044e,#a855f7);padding:40px 48px;text-align:center;">
+          <span style="color:white;font-size:26px;font-weight:800;">⚡ Travaillo</span>
+          <div style="margin-top:16px;font-size:36px;">🔮</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:48px;background:white;">
+          <h1 style="color:#0f172a;font-size:26px;font-weight:800;margin:0 0 12px;">Ton lien de connexion</h1>
+          <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;">Voici ton lien magique pour te connecter à <strong style="color:#a855f7;">Travaillo</strong> sans mot de passe. Un seul clic et tu es dans ton tableau de bord !</p>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="text-align:center;padding:8px 0 32px;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(168,85,247,0.35);">
+              Se connecter maintenant →
+            </a>
+          </td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="background:#faf5ff;border-left:4px solid #a855f7;border-radius:0 8px 8px 0;padding:16px 20px;">
+              <p style="color:#6b21a8;font-size:13px;margin:0;">⏰ Ce lien est valide pendant <strong>1 heure</strong> et ne peut être utilisé qu'une seule fois.</p>
+            </td>
+          </tr></table>
+          <p style="color:#94a3b8;font-size:12px;margin:24px 0 0;">Tu n'as pas demandé ce lien ? Ignore cet email, ton compte est en sécurité.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;">
+          <p style="color:#94a3b8;font-size:12px;margin:0;">© 2026 Travaillo — <a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;">support@travaillo.com</a></p>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="code-box">
+    <h3>📋 Code à coller dans Supabase → Templates → Magic link</h3>
+    <pre id="code-magic">&lt;table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;"&gt;
+  &lt;tr&gt;
+    &lt;td style="background:linear-gradient(135deg,#4a044e,#a855f7);padding:40px 48px;text-align:center;"&gt;
+      &lt;span style="color:white;font-size:26px;font-weight:800;"&gt;⚡ Travaillo&lt;/span&gt;
+      &lt;div style="margin-top:16px;font-size:36px;"&gt;🔮&lt;/div&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="padding:48px;background:white;"&gt;
+      &lt;h1 style="color:#0f172a;font-size:24px;font-weight:800;margin:0 0 12px;"&gt;Ton lien de connexion&lt;/h1&gt;
+      &lt;p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 32px;"&gt;
+        Voici ton lien magique pour te connecter à &lt;strong style="color:#a855f7;"&gt;Travaillo&lt;/strong&gt; sans mot de passe.
+      &lt;/p&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;&lt;td style="text-align:center;padding:8px 0 32px;"&gt;
+        &lt;a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#a855f7,#7c3aed);color:white;text-decoration:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 14px rgba(168,85,247,0.35);"&gt;
+          Se connecter maintenant →
+        &lt;/a&gt;
+      &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+      &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;&lt;tr&gt;
+        &lt;td style="background:#faf5ff;border-left:4px solid #a855f7;border-radius:0 8px 8px 0;padding:16px 20px;"&gt;
+          &lt;p style="color:#6b21a8;font-size:13px;margin:0;"&gt;⏰ Valide &lt;strong&gt;1 heure&lt;/strong&gt;, usage unique.&lt;/p&gt;
+        &lt;/td&gt;
+      &lt;/tr&gt;&lt;/table&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:24px 0 0;"&gt;Tu n'as pas demandé ce lien ? Ignore cet email.&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center;"&gt;
+      &lt;p style="color:#94a3b8;font-size:12px;margin:0;"&gt;© 2026 Travaillo — &lt;a href="mailto:support@travaillo.com" style="color:#10b981;text-decoration:none;"&gt;support@travaillo.com&lt;/a&gt;&lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</pre>
+    <button class="copy-btn" onclick="copyCode('code-magic')">📋 Copier le code</button>
+  </div>
+</div>
+
+<script>
+function show(tab) {
+  document.querySelectorAll('.email-wrapper').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+function copyCode(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copié !';
+    setTimeout(() => btn.textContent = '📋 Copier le code', 2000);
+  });
+}
+</script>
+</body>
+</html>
